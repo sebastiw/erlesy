@@ -1,17 +1,25 @@
-.idea
+# Created by https://www.gitignore.io/api/erlang
+
+### Erlang ###
 .eunit
 deps
 *.o
 *.beam
 *.plt
 erl_crash.dump
-ebin
+ebin/*.beam
 rel/example_project
 .concrete/DEV_MODE
 .rebar
-*.iml
-*.json
-_build
-output
+
+# End of https://www.gitignore.io/api/erlang
+
+### rebar3 ###
+
+_build/
 rebar.lock
+
+# generated files
+priv/example_fsm.gv
+priv/example_statem.gv
 

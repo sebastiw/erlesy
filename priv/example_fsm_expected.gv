@@ -1,0 +1,25 @@
+digraph "priv/example_fsm" { 
+  rankdir=LR;
+  edge [fontsize=10];
+  node [shape=circle];
+  ranksep = 2;
+  nodesep = 0.5
+  state_1->state_1[label="_HandleEvent"]
+  state_2->state_2[label="_HandleSyncEvent"]
+  case_state->case_state[label="_Info"]
+  state_1->state_1[label="e3"]
+  state_2->state_2[label="_HandleEvent"]
+  state_1->state_1[label="_Info"]
+  case_state->terminate[label="{e6,Param}"]
+  state_2->state_2[label="_Info"]
+  case_state->case_state[label="_HandleSyncEvent"]
+  state_1->state_2[label="e1"]
+  state_1->terminate[label="e2"]
+  state_2->state_1[label="e4"]
+  init->state_1[label=""]
+  case_state->case_state[label="_HandleEvent"]
+  state_1->state_1[label="_HandleSyncEvent"]
+  case_state->state_2[label="{e6,Param}"]
+  state_2->case_state[label="e5"]
+  case_state->case_state[label="{e6,Param}"]
+}

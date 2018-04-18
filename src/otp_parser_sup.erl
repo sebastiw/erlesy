@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, test/0, test/1]).
+-export([start_link/0]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -23,15 +23,6 @@
 %%--------------------------------------------------------------------
 start_link() ->
   supervisor:start_link({local, ?SERVER}, ?MODULE, []).
-
-test() ->
-  test(1).
-test(1) ->
-  start_link(),
-  otp_parser:create_graph("test/example_fsm.erl", "", json);
-test(2) ->
-  start_link(),
-  otp_parser:create_graph("test/example_fsm.erl", "", dot).
 %%%===================================================================
 %%% Supervisor callbacks
 %%%===================================================================

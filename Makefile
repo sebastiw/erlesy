@@ -1,12 +1,16 @@
-.PHONY: erlesy
-erlesy:
-	make -C erlesy
+.PHONY: compile get-deps test clean shell
+
+compile: get-deps
+	rebar3 compile
+
+get-deps:
+	rebar3 get-deps
+
+clean:
+	rebar3 clean
+
+test:
+	rebar3 eunit
 
 shell:
-	erl -sname erlesy -setcookie erlesy -pa erlesy/deps/*/ebin -pa erlesy/ebin -s otp_parser_app
-
-http:
-	cd erlesy_vis && python -m SimpleHTTPServer 8000
-
-tests:
-	make -C erlesy eunit
+	erl -sname erlesy -setcookie erlesy -pa _build/default/lib/erlesy/ebin -pa _build/default/lib/jsx/ebin -s otp_parser_app
