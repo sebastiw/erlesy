@@ -11,34 +11,34 @@ ErlEsy can be build by rebar3
 `rebar3 get-deps`
 `rebar3 compile`
 
+### make
+
 You can also use the makefile, with these directives:
-`make` - fetches deps and compiles erlesy
+`make compile` - fetches deps and compiles erlesy
 `make shell` - starts a erlesy shell
 
 ## Running 
 
-To run ErlEsy simply start the application by calling
+To run ErlEsy open a shell with
 
-`application:start(jsx).`
-`application:start(erlesy).`
+`make shell`
 
 Then you can create any file by using
 
-`-spec create_graph(string(), [string()], dot | json) -> ok.`
+`-spec create_graph(string(), [string()], dot) -> ok.`
 `otp_parser:create_graph(FileName, IncludeFiles, Mode).`
 
 * FileName should be a path to the .erl file you want to graph
 * IncludeFiles is a list of paths towards include files
-* Mode is either dot or json
+* Mode is dot
 
 ## Output and graphing
 
-ErlEsy currently supports two forms of output, a [DOT (.gv)](https://en.wikipedia.org/wiki/DOT_(graph_description_language)) formatted file or a JSON file.
+ErlEsy currently supports one form of output, a [DOT (.gv)](https://en.wikipedia.org/wiki/DOT_(graph_description_language)) formatted file.
 
 ### DOT
 
 DOT file can be used e.g. at http://www.webgraphviz.com/
-
 
 ## Example
 
@@ -49,8 +49,7 @@ Suppose your project structure is
 
 Then execute the following in the erlesy folder:
 
-* `rebar3 shell`
-* `application:start(jsx),application:start(erlesy).
+* `make shell`
 * `otp_parser:create_graph("/absolute_path_to_project/project/src/your_fsm.erl",["/absolute_path_to_project/project/include/"], dot].`
 
 This will create a `.gv` dot file in the same folder the source is located in.
