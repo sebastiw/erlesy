@@ -2,7 +2,13 @@
 
 ErlEsy is a simple graphing tool for Erlang. It allows for automatic generation of state machine diagrams out of Erlang source files. It works by parsing an .erl source file and building a digraph out of it. The digraph can be then transformed into any format that will allow for its graphical representation.
 
+## Dependencies
+
+* `OTP 19`
+* `rebar3` accessible via path
+
 ## Building
+
 
 ### rebar3
 
