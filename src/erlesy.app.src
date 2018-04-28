@@ -1,5 +1,5 @@
 {application, erlesy, [
-  {description, ""},
+  {description, "Visual Erlang development"},
   {vsn, "1.0.2"},
   {modules, [graph_builder, otp_parser_sup]},
   {registered, [graph_builder, otp_parser_sup]},
