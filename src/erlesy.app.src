@@ -1,6 +1,6 @@
 {application, erlesy, [
   {description, ""},
-  {vsn, "1.0.1"},
+  {vsn, "1.0.2"},
   {modules, [graph_builder, otp_parser_sup]},
   {registered, [graph_builder, otp_parser_sup]},
   {applications, [
@@ -9,5 +9,7 @@
     jsx
   ]},
   {mod, {otp_parser_app, []}},
-  {env, []}
+  {env, []},
+  {licenses, ["Apache"]},
+  {links, [{"Github", "https://github.com/lrascao/rebar3_erlesy"}]}
 ]}.
