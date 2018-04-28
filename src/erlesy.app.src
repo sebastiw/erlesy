@@ -9,5 +9,7 @@
     jsx
   ]},
   {mod, {otp_parser_app, []}},
-  {env, []}
+  {env, []},
+  {licenses, ["Apache"]},
+  {links, [{"Github", "https://github.com/lrascao/rebar3_erlesy"}]}
 ]}.
