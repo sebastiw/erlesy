@@ -3,10 +3,10 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,
-  parse_file/2]).
+-export([start_link/0, parse_file/2]).
 
--export([test/0, test/1, parse_statement/1]).
+-export([parse_statement/1]).
+
 %% gen_server callbacks
 -export([init/1,
   handle_call/3,
@@ -16,19 +16,17 @@
   code_change/3]).
 
 -include("types.hrl").
+
 -define(SERVER, ?MODULE).
 -define(EXPAND_FLAG, true).
 -record(state,{}).
 
-%% TODO gen_server and gen_event
-%% TODO add filtering for graphs?
-%% TODO make this into an app
-
 %%%===================================================================
 %%% API
 %%%===================================================================
- parse_file(File, IncludePaths) ->
-   gen_server:call(?MODULE, {parse_file, File, IncludePaths}).
+parse_file(File, IncludePaths) ->
+    gen_server:call(?MODULE, {parse_file, File, IncludePaths}).
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server
@@ -38,16 +36,6 @@
 %%--------------------------------------------------------------------
 start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-test() ->
-  test(1).
-
-test(1) ->
-  {ok, File} = file:open("output", [write]),
-  start_link(),
-  {_,_,Graph} = parse_file("test/example_fsm.erl", []),
-  io:format(File, "~s~n", [dot:digraph_to_dot("test", Graph)]),
-  file:close(File).
 
 %%%===================================================================
 %%% gen_server callbacks
