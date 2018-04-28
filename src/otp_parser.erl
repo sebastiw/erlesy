@@ -3,7 +3,9 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, create_graph/3]).
+-export([start_link/0,
+         create_graph/3,
+         create_graph/4]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -24,7 +26,10 @@ start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 create_graph(FileName, IncludePaths, Mode)->
-    gen_server:cast(?MODULE, {create, FileName, IncludePaths, Mode}).
+    create_graph(FileName, IncludePaths, undefined, Mode).
+
+create_graph(FileName, IncludePaths, OutputDir, Mode)->
+    gen_server:call(?MODULE, {create, FileName, IncludePaths, OutputDir, Mode}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -32,15 +37,17 @@ create_graph(FileName, IncludePaths, Mode)->
 init([]) ->
   {ok, #state{}}.
 
-handle_call(_Request, _From, State) ->
-  Reply = ok,
-  {reply, Reply, State}.
-
-handle_cast({create, FileName, IncludePaths, dot}, State) ->
-    {ok, File} = file:open(filename:rootname(FileName) ++ ".gv", [write]),
+handle_call({create, FileName, IncludePaths, OutputDir, dot}, _From, State) ->
+    OutputFilename = output_filename(FileName, OutputDir, dot),
+    ok = filelib:ensure_dir(OutputFilename),
+    {ok, File} = file:open(OutputFilename, [write]),
     {parsed, _, Digraph} = graph_builder:parse_file(FileName, IncludePaths),
     file:write(File, dot:digraph_to_dot(filename:rootname(FileName), Digraph)), 
     file:close(File),
+
+    {reply, ok, State}.
+
+handle_cast(_Request, State) ->
     {noreply, State}.
 
 handle_info(_Info, State) ->
@@ -55,3 +62,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+output_filename(FileName, undefined, Mode) ->
+    filename:rootname(FileName) ++ output_extension(Mode);
+output_filename(FileName, OutputDir, Mode) ->
+    filename:join([OutputDir, filename:basename(filename:rootname(FileName)) ++ output_extension(Mode)]).
+
+output_extension(dot) -> ".gv".
