@@ -166,7 +166,7 @@ parse_gen_statem(TokenList) ->
        (_Other, {OldNodes, OldEdges, OldAllStates}) ->
           {OldNodes, OldEdges, OldAllStates}
     end,
-    Graph = generic_parse(TokenList, Fun),
+    Graph = generic_parse(Fun, TokenList),
     {parsed, Type, Graph}.
 
 parse_gen_fsm(TokenList) ->
@@ -189,10 +189,10 @@ parse_gen_fsm(TokenList) ->
        (_Other, {OldNodes, OldEdges, OldAllStates}) ->
             {OldNodes, OldEdges, OldAllStates}
     end,
-    Graph = generic_parse(TokenList, Fun),
+    Graph = generic_parse(Fun, TokenList),
     {parsed, Type, Graph}.
 
-generic_parse(TokenList, Fun) ->
+generic_parse(Fun, TokenList) ->
   Graph = digraph:new(),
   {States, Edges, AllStateEdges} = lists:foldl(Fun, {[init, terminate],[],[]}, TokenList),
   {ExpAllStates, Expansion} = case ?EXPAND_FLAG of
