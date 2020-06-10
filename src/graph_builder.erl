@@ -300,15 +300,16 @@ parse_function_clause({clause, _Line, [Event | Args], Guards, Body},
           }
         end,
   map_parse_func(Fun, handle_info, Body, gen_fsm);
-parse_function_clause({clause, _Line, [_EventType, State, Event | Args], Guards, Body},
+parse_function_clause({clause, _Line, [_EventType, Event, State | Args], Guards, Body},
                       handle_event, Options, gen_statem) ->
+  PrettyState = parse_state(State),
   Fun = fun({ok, NextState, RetType}) ->
           PrettyGuards = lists:map(fun(G) -> erl_pp:guard(G) end, Guards),
           PrettyBody = erl_pp:exprs(Body),
           PrettyEvent = erl_pp:expr(Event),
           PrettyArgs = erl_pp:exprs(Args),
           #edge{
-            vertex1 = State,
+            vertex1 = PrettyState,
             vertex2 = NextState,
             edge_data =
             #edge_data{
@@ -364,7 +365,10 @@ parse_function_clause({clause, _Line, [_Call, Event | Args], Guards, Body},
         end,
   map_parse_func(Fun, FnName, Body, gen_statem).
 
-%process_body({ok. PrevState, NextState, }) ->
+parse_state({atom, _, A}) ->
+    A;
+parse_state({var, _, _} = V) ->
+    V.
 
 map_parse_func(Fun, State, Body, Type) ->
   case eval_return(State, parse_body(Body), Type, []) of
