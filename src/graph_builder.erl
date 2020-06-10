@@ -76,12 +76,17 @@ handle_call({parse_file, File, IncludePaths}, _From, State) ->
     case Behaviours of
         [] ->
             {reply, {error, not_otp}, State};
-        L ->
-            {reply, parse(L, ParsedFile), State}
+        [gen_server|_] ->
+            {reply, parse_gen_server(ParsedFile), State};
+        [gen_fsm|_] ->
+            {reply, parse_gen_fsm(ParsedFile), State};
+        [gen_statem|_] ->
+            {reply, parse_gen_statem(ParsedFile), State};
+        [gen_event|_] ->
+            {reply, parse_gen_event(ParsedFile), State}
     end;
 handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+    {reply, ok, State}.
 
 
 %%--------------------------------------------------------------------
@@ -139,17 +144,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-parse([], _) ->
-    {error, parse};
-parse([gen_server|_], ParsedFile) ->
-    parse_gen_server(ParsedFile);
-parse([gen_fsm|_], ParsedFile) ->
-    parse_gen_fsm(ParsedFile);
-parse([gen_statem|_], ParsedFile) ->
-    parse_gen_statem(ParsedFile);
-parse([gen_event|_], ParsedFile) ->
-    parse_gen_event(ParsedFile).
 
 parse_gen_server(_TokenList) ->
     {error, not_supported}.
