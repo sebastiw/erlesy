@@ -253,20 +253,19 @@ parse_function_add_node_and_edges(Clauses, FnName, Options, Type,
 
 parse_function(Clauses, FnName, Options, Type) ->
   Edges = lists:foldl(fun(Clause, AccIn) ->
-               [parse_function_clause(Clause, FnName, Options, Type) | AccIn]
-              end, [], Clauses),
-  FlatEdges = lists:flatten(Edges),
-  %io:format("For function ~p~n", [FnName]),
-  % lists:foreach(fun(E) ->
-  %       io:format(">>> ~p~n", [E])
-  %   end, FlatEdges),
-
-  case lists:all(fun (El) -> {error, bad_transition} == El end, Edges) of
-    false ->
-      FlatEdges;
-    true ->
-      {error, not_a_state}
-  end.
+                              [parse_function_clause(Clause, FnName, Options, Type) | AccIn]
+                      end, [], Clauses),
+    FlatEdges = lists:flatten(Edges),
+    %% io:format("For function ~p~n", [FnName]),
+    %% lists:foreach(fun(E) ->
+    %%                       io:format(">>> ~p~n", [E])
+    %%               end, FlatEdges),
+    case lists:all(fun (El) -> {error, bad_transition} == El end, Edges) of
+        false ->
+            FlatEdges;
+        true ->
+            {error, not_a_state}
+    end.
 
 parse_function_clause({clause, _Line, Args, Guards, Body},
                       init, _Options, Type) ->
@@ -329,7 +328,7 @@ parse_function_clause({clause, _Line, [_EventType, State, Event | Args], Guards,
               attributes = [RetType|Options]}
           }
         end,
-  map_parse_func(Fun, handle_info, Body, gen_fsm);
+  map_parse_func(Fun, State, Body, gen_statem);
 parse_function_clause({clause, _Line, [Event | Args], Guards, Body},
                       FnName, Options, gen_fsm) ->
   Fun = fun({ok, NextState, _}) ->
@@ -395,16 +394,15 @@ parse_body([], Acc) ->
 parse_statement({tuple, Line, Elems}) ->
   {tuple, Line, Elems};
 parse_statement(Statement) when is_tuple(Statement) ->
-  lists:map(fun(Index) ->
-    parse_statement(element(Index, Statement))
-  end, lists:seq(1, size(Statement)));
+    lists:map(fun(Index) ->
+                      parse_statement(element(Index, Statement))
+              end, lists:seq(1, size(Statement)));
 parse_statement(Statement) when is_list(Statement) ->
-  lists:map(fun(Index) ->
-    parse_statement(lists:nth(Index, Statement))
-  end, lists:seq(1, length(Statement)));
+    lists:map(fun(Index) ->
+                      parse_statement(lists:nth(Index, Statement))
+              end, lists:seq(1, length(Statement)));
 parse_statement(_Statement) ->
   [].
-
 
 eval_return(State, [ReturnVal|Rest], gen_fsm, Acc) ->
   case eval_tuple(ReturnVal) of
