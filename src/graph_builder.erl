@@ -71,32 +71,14 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_call({parse_file, File, IncludePaths}, _From, State) ->
   {ok, ParsedFile} = epp:parse_file(File, IncludePaths, []),
-  Behaviour = lists:keyfind(behaviour, 3, ParsedFile),
-  Behavior = lists:keyfind(behavior, 3, ParsedFile),
-  Reply = case Behaviour of
-            {attribute, _, _, gen_server} ->
-              parse_gen_server(ParsedFile);
-            {attribute, _, _, gen_fsm} ->
-              parse_gen_fsm(ParsedFile);
-            {attribute, _, _, gen_statem} ->
-              parse_gen_statem(ParsedFile);
-            {attribute, _, _, gen_event} ->
-              parse_gen_event(ParsedFile);
-            false ->
-              case Behavior of
-                {attribute, _, _, gen_server} ->
-                  parse_gen_server(ParsedFile);
-                {attribute, _, _, gen_fsm} ->
-                  parse_gen_fsm(ParsedFile);
-                {attribute, _, _, gen_statem} ->
-                  parse_gen_statem(ParsedFile);
-                {attribute, _, _, gen_event} ->
-                  parse_gen_event(ParsedFile);
-                false ->
-                  {error, not_otp}
-              end
-          end,
-  {reply, Reply, State};
+  Behaviours = [T || {attribute, _, B, T} <- ParsedFile,
+                     B == behaviour orelse B == behavior],
+  case Behaviours of
+      [] ->
+          {reply, {error, not_otp}, State};
+      L ->
+          {reply, parse(L, ParsedFile), State}
+  end;
 handle_call(_Request, _From, State) ->
   Reply = ok,
   {reply, Reply, State}.
@@ -158,6 +140,16 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+parse([], _) ->
+  {error, parse};
+parse([gen_server|_], ParsedFile) ->
+    parse_gen_server(ParsedFile);
+parse([gen_fsm|_], ParsedFile) ->
+    parse_gen_fsm(ParsedFile);
+parse([gen_statem|_], ParsedFile) ->
+    parse_gen_statem(ParsedFile);
+parse([gen_event|_], ParsedFile) ->
+    parse_gen_event(ParsedFile).
 
 parse_gen_server(_TokenList) ->
   {error, not_supported}.
