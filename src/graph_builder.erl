@@ -371,12 +371,20 @@ parse_state({var, _, _} = V) ->
     V.
 
 map_parse_func(Fun, State, Body, Type) ->
-  case eval_return(State, parse_body(Body), Type, []) of
-    {error, _Reason} ->
-      {error, bad_transition};
-    List ->
-      lists:map(Fun, List)
-  end.
+    ParsedBody = lists:map(fun eval_tuple/1, parse_body(Body)),
+    EvalFun = case Type of
+                  gen_statem ->
+                      eval_statem_return(State);
+                  gen_fsm ->
+                      eval_fsm_return()
+              end,
+    case lists:filter(fun(E) -> undefined =/= E end,
+                      lists:map(EvalFun, ParsedBody)) of
+        [] ->
+            {error, bad_transition};
+        List ->
+            lists:map(Fun, List)
+    end.
 
 parse_body(Body) ->
   lists:flatmap(fun parse_statement/1, Body).
@@ -390,69 +398,61 @@ parse_statement(Statement) when is_list(Statement) ->
 parse_statement(_Statement) ->
   [].
 
-eval_return(State, [ReturnVal|Rest], gen_fsm, Acc) ->
-  case eval_tuple(ReturnVal) of
-    {ok, {ok, NextState, _Data}} ->
-      eval_return(State, Rest, gen_fsm, [{ok, NextState, init}|Acc]);
-    {ok, {ok, NextState, _Data, _Timeout}} ->
-      eval_return(State, Rest, gen_fsm, [{ok, NextState, init}|Acc]);
-    {ok, {stop, _Reason}} ->
-      eval_return(State, Rest, gen_fsm, [{ok, terminate, init}|Acc]);
-    {ok, {reply, _Reply, NextState, _Data}} ->
-      eval_return(State, Rest, gen_fsm, [{ok, NextState, sync}|Acc]);
-    {ok, {reply, _Reply, NextState, _Data, _Timeout}} ->
-      eval_return(State, Rest, gen_fsm, [{ok, NextState, sync}|Acc]);
-    {ok, {stop, _Reason, _Reply, _Data}} ->
-      eval_return(State, Rest, gen_fsm, [{ok, terminate, sync}|Acc]);
-    {ok, {next_state, NextState, _Data}} ->
-      eval_return(State, Rest, gen_fsm, [{ok, NextState, async}|Acc]);
-    {ok, {next_state, NextState, _Data, _Timeout}} ->
-      eval_return(State, Rest, gen_fsm, [{ok, NextState, async}|Acc]);
-    {ok, {stop, _Reason, _Data}} ->
-      eval_return(State, Rest, gen_fsm, [{ok, terminate, async}|Acc]);
-    _Other ->
-      eval_return(State, Rest, gen_fsm, Acc)
-  end;
-eval_return(State, [ReturnVal|Rest], gen_statem, Acc) ->
-  case eval_tuple(ReturnVal) of
-    {ok, {ok, NextState, _Data}} ->
-      eval_return(State, Rest, gen_statem, [{ok, NextState, init}|Acc]);
-    {ok, {ok, NextState, _Data, _Actions}} ->
-      eval_return(State, Rest, gen_statem, [{ok, NextState, init}|Acc]);
-    {ok, ignore} ->
-      eval_return(State, Rest, gen_statem, [{ok, terminate, init}|Acc]);
+eval_fsm_return() ->
+    fun({ok, {ok, NextState, _Data}}) ->
+            {ok, NextState, init};
+       ({ok, {ok, NextState, _Data, _Timeout}}) ->
+            {ok, NextState, init};
+       ({ok, {stop, _Reason}}) ->
+            {ok, terminate, init};
+       ({ok, {reply, _Reply, NextState, _Data}}) ->
+            {ok, NextState, sync};
+       ({ok, {reply, _Reply, NextState, _Data, _Timeout}}) ->
+            {ok, NextState, sync};
+       ({ok, {stop, _Reason, _Reply, _Data}}) ->
+            {ok, terminate, sync};
+       ({ok, {next_state, NextState, _Data}}) ->
+            {ok, NextState, async};
+       ({ok, {next_state, NextState, _Data, _Timeout}}) ->
+            {ok, NextState, async};
+       ({ok, {stop, _Reason, _Data}}) ->
+            {ok, terminate, async};
+       (_Other) ->
+            undefined
+    end.
 
-    {ok, stop} ->
-      eval_return(State, Rest, gen_statem, [{ok, terminate, async}|Acc]);
-    {ok, {stop, _Reason}} ->
-      eval_return(State, Rest, gen_statem, [{ok, terminate, async}|Acc]);
-    {ok, {stop, _Reason, _NewData}} ->
-      eval_return(State, Rest, gen_statem, [{ok, terminate, async}|Acc]);
-    {ok, {stop_and_reply, _Reason, _Replies}} ->
-      eval_return(State, Rest, gen_statem, [{ok, terminate, async}|Acc]);
-    {ok, {stop_and_reply, _Reason, _Replies, _NewData}} ->
-      eval_return(State, Rest, gen_statem, [{ok, terminate, async}|Acc]);
-
-    {ok, {next_state, NextState, _Data}} ->
-      eval_return(State, Rest, gen_statem, [{ok, NextState, async}|Acc]);
-    {ok, {next_state, NextState, _Data, _Actions}} ->
-      eval_return(State, Rest, gen_statem, [{ok, NextState, async}|Acc]);
-    {ok, {keep_state, _NewData}} ->
-      eval_return(State, Rest, gen_statem, [{ok, State, async}|Acc]);
-    {ok, {keep_state, _NewData, _Actions}} ->
-      eval_return(State, Rest, gen_statem, [{ok, State, async}|Acc]);
-    {ok, keep_state_and_data} ->
-      eval_return(State, Rest, gen_statem, [{ok, State, async}|Acc]);
-    {ok, {keep_state_and_data, _Actions}} ->
-      eval_return(State, Rest, gen_statem, [{ok, State, async}|Acc]);
-    _Other ->
-      eval_return(State, Rest, gen_statem, Acc)
-  end;
-eval_return(_, [], _, []) ->
-  {error, badreturn};
-eval_return(_, [], _, Acc) ->
-  Acc.
-
+eval_statem_return(State) ->
+    fun ({ok, {ok, NextState, _Data}}) ->
+            {ok, NextState, init};
+        ({ok, {ok, NextState, _Data, _Actions}}) ->
+            {ok, NextState, init};
+        ({ok, ignore}) ->
+            {ok, terminate, init};
+        ({ok, stop}) ->
+            {ok, terminate, async};
+        ({ok, {stop, _Reason}}) ->
+            {ok, terminate, async};
+        ({ok, {stop, _Reason, _NewData}}) ->
+            {ok, terminate, async};
+        ({ok, {stop_and_reply, _Reason, _Replies}}) ->
+            {ok, terminate, async};
+        ({ok, {stop_and_reply, _Reason, _Replies, _NewData}}) ->
+            {ok, terminate, async};
+        ({ok, {next_state, NextState, _Data}}) ->
+            {ok, NextState, async};
+        ({ok, {next_state, NextState, _Data, _Actions}}) ->
+            {ok, NextState, async};
+        ({ok, {keep_state, _NewData}}) ->
+            {ok, State, async};
+        ({ok, {keep_state, _NewData, _Actions}}) ->
+            {ok, State, async};
+        ({ok, keep_state_and_data}) ->
+            {ok, State, async};
+        ({ok, {keep_state_and_data, _Actions}}) ->
+            {ok, State, async};
+        (_Other) ->
+            undefined
+    end.
 
 eval_tuple({tuple, Line, Elements})->
   ClearElements = lists:map(fun(Element) ->
