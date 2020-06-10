@@ -244,9 +244,9 @@ parse_function_add_node_and_edges(Clauses, FnName, Options, Type,
   end.
 
 parse_function(Clauses, FnName, Options, Type) ->
-  Edges = lists:foldl(fun(Clause, AccIn) ->
-                              [parse_function_clause(Clause, FnName, Options, Type) | AccIn]
-                      end, [], Clauses),
+    Edges = lists:map(fun(Clause) ->
+                              parse_function_clause(Clause, FnName, Options, Type)
+                      end, Clauses),
     FlatEdges = lists:flatten(Edges),
     %% io:format("For function ~p~n", [FnName]),
     %% lists:foreach(fun(E) ->
