@@ -163,8 +163,8 @@ parse_gen_statem(TokenList) ->
           parse_function_add_node_and_edges(Clauses, FnName, [], Type, Acc);
        ({function, _, FnName, 3, Clauses}, Acc) ->
           parse_function_add_node_and_edges(Clauses, FnName, [], Type, Acc);
-       (_Other, {OldNodes, OldEdges, OldAllStates}) ->
-          {OldNodes, OldEdges, OldAllStates}
+       (_Other, Acc) ->
+          Acc
     end,
     Graph = generic_parse(Fun, TokenList),
     {parsed, Type, Graph}.
@@ -181,13 +181,11 @@ parse_gen_fsm(TokenList) ->
        ({function, _, handle_info, 3, Clauses}, Acc) ->
           parse_function_add_states(Clauses, handle_info, [async, allstate, info], Type, Acc);
        ({function, _, FnName, 2, Clauses}, Acc) ->
-          %io:format("CLAUSES ~w for ASYNC FUNCTION ~w~n", [Clauses, FnName]),
           parse_function_add_node_and_edges(Clauses, FnName, [async], Type, Acc);
        ({function, _, FnName, 3, Clauses}, Acc) ->
-          %io:format("CLAUSES ~w for SYNC FUNCTION ~w~n", [Clauses, FnName]),
           parse_function_add_node_and_edges(Clauses, FnName, [sync], Type, Acc);
-       (_Other, {OldNodes, OldEdges, OldAllStates}) ->
-            {OldNodes, OldEdges, OldAllStates}
+       (_Other, Acc) ->
+            Acc
     end,
     Graph = generic_parse(Fun, TokenList),
     {parsed, Type, Graph}.
@@ -201,17 +199,20 @@ generic_parse(Fun, TokenList) ->
 				false ->
 					{["*" | States], ["*"]}
 			      end,
-  NewAllStateEdges = expand_allstates(AllStateEdges, Expansion),%States),
-  %io:format("~p~n", [NewAllStateEdges]),
+  NewAllStateEdges = expand_allstates(AllStateEdges, Expansion),
   lists:foreach(fun(Vertex) ->
                   V = digraph:add_vertex(Graph),
                   digraph:add_vertex(Graph, V, Vertex)
-                end, lists:usort(ExpAllStates)),
+                end,
+                lists:usort(ExpAllStates)),
   lists:foreach(fun(#edge{vertex1 = From, vertex2 = To, edge_data = Data}) ->
-                  digraph:add_edge(Graph, get_vertex(Graph, From),
-                                   get_vertex(Graph,To), Data);
+                        digraph:add_edge(Graph,
+                                         get_vertex(Graph, From),
+                                         get_vertex(Graph, To),
+                                         Data);
                    (_) -> ok
-                end, remove_dups(Edges ++ NewAllStateEdges)),
+                end,
+                remove_dups(Edges ++ NewAllStateEdges)),
   Graph.
 
 parse_gen_event(_TokenList) ->
@@ -455,20 +456,16 @@ eval_statem_return(State) ->
     end.
 
 eval_tuple({tuple, Line, Elements})->
-  ClearElements = lists:map(fun(Element) ->
-%%     io:format("NOW PROCESSING: ~p~n", [Element]),
-    case Element of
-      {atom, RLine, Atom} ->
-        {atom, RLine, Atom};
-      _Other ->
-        {atom, 0, '@var'}
-    end
-  end, Elements),
-  ClearTuple = {tuple, Line, ClearElements},
-  {value, Val, _} = erl_eval:expr(ClearTuple, []), %Bindings),
-  {ok, Val};
+    ClearElements = lists:map(fun({atom, RLine, Atom}) ->
+                                      {atom, RLine, Atom};
+                                 (_Other) ->
+                                      {atom, 0, '@var'}
+                              end, Elements),
+    ClearTuple = {tuple, Line, ClearElements},
+    {value, Val, _} = erl_eval:expr(ClearTuple, []),
+    {ok, Val};
 eval_tuple(_Other)->
-  {error, not_a_tuple}.
+    {error, not_a_tuple}.
 
 expand_allstates(Edges, States) ->
   ClearStates = lists:delete(init, lists:delete(terminate, States)),
