@@ -9,11 +9,11 @@
 
 %% gen_server callbacks
 -export([init/1,
-  handle_call/3,
-  handle_cast/2,
-  handle_info/2,
-  terminate/2,
-  code_change/3]).
+         handle_call/3,
+         handle_cast/2,
+         handle_info/2,
+         terminate/2,
+         code_change/3]).
 
 -include("types.hrl").
 
@@ -35,7 +35,7 @@ parse_file(File, IncludePaths) ->
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -53,7 +53,7 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-  {ok, #state{}}.
+    {ok, #state{}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -70,18 +70,18 @@ init([]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({parse_file, File, IncludePaths}, _From, State) ->
-  {ok, ParsedFile} = epp:parse_file(File, IncludePaths, []),
-  Behaviours = [T || {attribute, _, B, T} <- ParsedFile,
-                     B == behaviour orelse B == behavior],
-  case Behaviours of
-      [] ->
-          {reply, {error, not_otp}, State};
-      L ->
-          {reply, parse(L, ParsedFile), State}
-  end;
+    {ok, ParsedFile} = epp:parse_file(File, IncludePaths, []),
+    Behaviours = [T || {attribute, _, B, T} <- ParsedFile,
+                       B == behaviour orelse B == behavior],
+    case Behaviours of
+        [] ->
+            {reply, {error, not_otp}, State};
+        L ->
+            {reply, parse(L, ParsedFile), State}
+    end;
 handle_call(_Request, _From, State) ->
-  Reply = ok,
-  {reply, Reply, State}.
+    Reply = ok,
+    {reply, Reply, State}.
 
 
 %%--------------------------------------------------------------------
@@ -96,7 +96,7 @@ handle_call(_Request, _From, State) ->
 %%--------------------------------------------------------------------
 
 handle_cast(_Msg, State) ->
-  {noreply, State}.
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -109,7 +109,7 @@ handle_cast(_Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info(_Info, State) ->
-  {noreply, State}.
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -123,7 +123,7 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, _State) ->
-  ok.
+    ok.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -134,14 +134,14 @@ terminate(_Reason, _State) ->
 %% @end
 %%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
-  {ok, State}.
+    {ok, State}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
 parse([], _) ->
-  {error, parse};
+    {error, parse};
 parse([gen_server|_], ParsedFile) ->
     parse_gen_server(ParsedFile);
 parse([gen_fsm|_], ParsedFile) ->
@@ -152,97 +152,97 @@ parse([gen_event|_], ParsedFile) ->
     parse_gen_event(ParsedFile).
 
 parse_gen_server(_TokenList) ->
-  {error, not_supported}.
+    {error, not_supported}.
 
 parse_gen_statem(TokenList) ->
-  Type = gen_statem,
-  Fun =
-    fun({function, _, init, 1, Clauses}, Acc) ->
-          parse_function_add_edges(Clauses, init, [async], Type, Acc);
-       ({function, _, handle_event = FnName, 4, Clauses}, Acc) ->
-          parse_function_add_node_and_edges(Clauses, FnName, [], Type, Acc);
-       ({function, _, FnName, 3, Clauses}, Acc) ->
-          parse_function_add_node_and_edges(Clauses, FnName, [], Type, Acc);
-       (_Other, Acc) ->
-          Acc
-    end,
+    Type = gen_statem,
+    Fun =
+        fun({function, _, init, 1, Clauses}, Acc) ->
+                parse_function_add_edges(Clauses, init, [async], Type, Acc);
+           ({function, _, handle_event = FnName, 4, Clauses}, Acc) ->
+                parse_function_add_node_and_edges(Clauses, FnName, [], Type, Acc);
+           ({function, _, FnName, 3, Clauses}, Acc) ->
+                parse_function_add_node_and_edges(Clauses, FnName, [], Type, Acc);
+           (_Other, Acc) ->
+                Acc
+        end,
     Graph = generic_parse(Fun, TokenList),
     {parsed, Type, Graph}.
 
 parse_gen_fsm(TokenList) ->
-  Type = gen_fsm,
-  Fun =
-    fun({function, _, init, 1, Clauses}, Acc) ->
-          parse_function_add_edges(Clauses, init, [async], Type, Acc);
-       ({function, _, handle_event, 3, Clauses}, Acc) ->
-          parse_function_add_states(Clauses, handle_event, [async, allstate], Type, Acc);
-       ({function, _, handle_sync_event, 4, Clauses}, Acc) ->
-          parse_function_add_states(Clauses, handle_sync_event, [sync, allstate], Type, Acc);
-       ({function, _, handle_info, 3, Clauses}, Acc) ->
-          parse_function_add_states(Clauses, handle_info, [async, allstate, info], Type, Acc);
-       ({function, _, FnName, 2, Clauses}, Acc) ->
-          parse_function_add_node_and_edges(Clauses, FnName, [async], Type, Acc);
-       ({function, _, FnName, 3, Clauses}, Acc) ->
-          parse_function_add_node_and_edges(Clauses, FnName, [sync], Type, Acc);
-       (_Other, Acc) ->
-            Acc
-    end,
+    Type = gen_fsm,
+    Fun =
+        fun({function, _, init, 1, Clauses}, Acc) ->
+                parse_function_add_edges(Clauses, init, [async], Type, Acc);
+           ({function, _, handle_event, 3, Clauses}, Acc) ->
+                parse_function_add_states(Clauses, handle_event, [async, allstate], Type, Acc);
+           ({function, _, handle_sync_event, 4, Clauses}, Acc) ->
+                parse_function_add_states(Clauses, handle_sync_event, [sync, allstate], Type, Acc);
+           ({function, _, handle_info, 3, Clauses}, Acc) ->
+                parse_function_add_states(Clauses, handle_info, [async, allstate, info], Type, Acc);
+           ({function, _, FnName, 2, Clauses}, Acc) ->
+                parse_function_add_node_and_edges(Clauses, FnName, [async], Type, Acc);
+           ({function, _, FnName, 3, Clauses}, Acc) ->
+                parse_function_add_node_and_edges(Clauses, FnName, [sync], Type, Acc);
+           (_Other, Acc) ->
+                Acc
+        end,
     Graph = generic_parse(Fun, TokenList),
     {parsed, Type, Graph}.
 
 generic_parse(Fun, TokenList) ->
-  Graph = digraph:new(),
-  {States, Edges, AllStateEdges} = lists:foldl(Fun, {[init, terminate],[],[]}, TokenList),
-  {ExpAllStates, Expansion} = case ?EXPAND_FLAG of
-				true ->
-					{States, States};
-				false ->
-					{["*" | States], ["*"]}
-			      end,
-  NewAllStateEdges = expand_allstates(AllStateEdges, Expansion),
-  lists:foreach(fun(Vertex) ->
-                  V = digraph:add_vertex(Graph),
-                  digraph:add_vertex(Graph, V, Vertex)
-                end,
-                lists:usort(ExpAllStates)),
-  lists:foreach(fun(#edge{vertex1 = From, vertex2 = To, edge_data = Data}) ->
-                        digraph:add_edge(Graph,
-                                         get_vertex(Graph, From),
-                                         get_vertex(Graph, To),
-                                         Data);
-                   (_) -> ok
-                end,
-                remove_dups(Edges ++ NewAllStateEdges)),
-  Graph.
+    Graph = digraph:new(),
+    {States, Edges, AllStateEdges} = lists:foldl(Fun, {[init, terminate],[],[]}, TokenList),
+    {ExpAllStates, Expansion} = case ?EXPAND_FLAG of
+                                    true ->
+                                        {States, States};
+                                    false ->
+                                        {["*" | States], ["*"]}
+                                end,
+    NewAllStateEdges = expand_allstates(AllStateEdges, Expansion),
+    lists:foreach(fun(Vertex) ->
+                          V = digraph:add_vertex(Graph),
+                          digraph:add_vertex(Graph, V, Vertex)
+                  end,
+                  lists:usort(ExpAllStates)),
+    lists:foreach(fun(#edge{vertex1 = From, vertex2 = To, edge_data = Data}) ->
+                          digraph:add_edge(Graph,
+                                           get_vertex(Graph, From),
+                                           get_vertex(Graph, To),
+                                           Data);
+                     (_) -> ok
+                  end,
+                  remove_dups(Edges ++ NewAllStateEdges)),
+    Graph.
 
 parse_gen_event(_TokenList) ->
-  {error, not_supported}.
+    {error, not_supported}.
 
 parse_function_add_states(Clauses, FnName, Options, Type,
                           {OldNodes, OldEdges, OldAllStates}) ->
-  case parse_function(Clauses, FnName, Options, Type) of
-    {error, _Reason} ->
-      {OldNodes, OldEdges, OldAllStates};
-    NewEdges ->
-      {OldNodes, OldEdges, OldAllStates ++ NewEdges}
-  end.
+    case parse_function(Clauses, FnName, Options, Type) of
+        {error, _Reason} ->
+            {OldNodes, OldEdges, OldAllStates};
+        NewEdges ->
+            {OldNodes, OldEdges, OldAllStates ++ NewEdges}
+    end.
 
 parse_function_add_edges(Clauses, FnName, Options, Type,
-                          {OldNodes, OldEdges, OldAllStates}) ->
-  case parse_function(Clauses, FnName, Options, Type) of
-    {error, _Reason} ->
-      {OldNodes, OldEdges, OldAllStates};
-    NewEdges ->
-      {OldNodes, OldEdges ++ NewEdges, OldAllStates}
-  end.
+                         {OldNodes, OldEdges, OldAllStates}) ->
+    case parse_function(Clauses, FnName, Options, Type) of
+        {error, _Reason} ->
+            {OldNodes, OldEdges, OldAllStates};
+        NewEdges ->
+            {OldNodes, OldEdges ++ NewEdges, OldAllStates}
+    end.
 parse_function_add_node_and_edges(Clauses, FnName, Options, Type,
                                   {OldNodes, OldEdges, OldAllStates}) ->
-  case parse_function(Clauses, FnName, Options, Type) of
-    {error, _Reason} ->
-      {OldNodes, OldEdges, OldAllStates};
-    NewEdges ->
-      {[FnName|OldNodes], OldEdges ++ NewEdges, OldAllStates}
-  end.
+    case parse_function(Clauses, FnName, Options, Type) of
+        {error, _Reason} ->
+            {OldNodes, OldEdges, OldAllStates};
+        NewEdges ->
+            {[FnName|OldNodes], OldEdges ++ NewEdges, OldAllStates}
+    end.
 
 parse_function(Clauses, FnName, Options, Type) ->
     Edges = lists:map(fun(Clause) ->
@@ -262,109 +262,109 @@ parse_function(Clauses, FnName, Options, Type) ->
 
 parse_function_clause({clause, _Line, Args, Guards, Body},
                       init, _Options, Type) ->
-  Fun = fun({ok, NextState, init}) ->
-          PrettyGuards = lists:map(fun(G) -> erl_pp:guard(G) end, Guards),
-          PrettyBody = erl_pp:exprs(Body),
-          PrettyArgs = erl_pp:exprs(Args),
-          #edge{
-            vertex1 = init,
-            vertex2 = NextState,
-            edge_data =
-            #edge_data{
-              event = "",
-              args = PrettyArgs,
-              pattern = Args,
-              guard = PrettyGuards,
-              code = PrettyBody,
-              attributes = [async]}
-          }
-        end,
-  map_parse_func(Fun, init, Body, Type);
+    Fun = fun({ok, NextState, init}) ->
+                  PrettyGuards = lists:map(fun(G) -> erl_pp:guard(G) end, Guards),
+                  PrettyBody = erl_pp:exprs(Body),
+                  PrettyArgs = erl_pp:exprs(Args),
+                  #edge{
+                     vertex1 = init,
+                     vertex2 = NextState,
+                     edge_data =
+                         #edge_data{
+                            event = "",
+                            args = PrettyArgs,
+                            pattern = Args,
+                            guard = PrettyGuards,
+                            code = PrettyBody,
+                            attributes = [async]}
+                    }
+          end,
+    map_parse_func(Fun, init, Body, Type);
 parse_function_clause({clause, _Line, [Event | Args], Guards, Body},
                       handle_info, Options, gen_fsm) ->
-  Fun = fun({ok, NextState, RetType}) ->
-          PrettyGuards = lists:map(fun(G) -> erl_pp:guard(G) end, Guards),
-          PrettyBody = erl_pp:exprs(Body),
-          PrettyEvent = erl_pp:expr(Event),
-          PrettyArgs = erl_pp:exprs(Args),
-          #edge{
-            vertex1 = handle_info,
-            vertex2 = NextState,
-            edge_data =
-            #edge_data{
-              event = PrettyEvent,
-              args = PrettyArgs,
-              pattern = Args,
-              guard = PrettyGuards,
-              code = PrettyBody,
-              attributes = [RetType|Options]}
-          }
-        end,
-  map_parse_func(Fun, handle_info, Body, gen_fsm);
+    Fun = fun({ok, NextState, RetType}) ->
+                  PrettyGuards = lists:map(fun(G) -> erl_pp:guard(G) end, Guards),
+                  PrettyBody = erl_pp:exprs(Body),
+                  PrettyEvent = erl_pp:expr(Event),
+                  PrettyArgs = erl_pp:exprs(Args),
+                  #edge{
+                     vertex1 = handle_info,
+                     vertex2 = NextState,
+                     edge_data =
+                         #edge_data{
+                            event = PrettyEvent,
+                            args = PrettyArgs,
+                            pattern = Args,
+                            guard = PrettyGuards,
+                            code = PrettyBody,
+                            attributes = [RetType|Options]}
+                    }
+          end,
+    map_parse_func(Fun, handle_info, Body, gen_fsm);
 parse_function_clause({clause, _Line, [_EventType, Event, State | Args], Guards, Body},
                       handle_event, Options, gen_statem) ->
-  PrettyState = parse_state(State),
-  Fun = fun({ok, NextState, RetType}) ->
-          PrettyGuards = lists:map(fun(G) -> erl_pp:guard(G) end, Guards),
-          PrettyBody = erl_pp:exprs(Body),
-          PrettyEvent = erl_pp:expr(Event),
-          PrettyArgs = erl_pp:exprs(Args),
-          #edge{
-            vertex1 = PrettyState,
-            vertex2 = NextState,
-            edge_data =
-            #edge_data{
-              event = PrettyEvent,
-              args = PrettyArgs,
-              pattern = Args,
-              guard = PrettyGuards,
-              code = PrettyBody,
-              attributes = [RetType|Options]}
-          }
-        end,
-  map_parse_func(Fun, State, Body, gen_statem);
+    PrettyState = parse_state(State),
+    Fun = fun({ok, NextState, RetType}) ->
+                  PrettyGuards = lists:map(fun(G) -> erl_pp:guard(G) end, Guards),
+                  PrettyBody = erl_pp:exprs(Body),
+                  PrettyEvent = erl_pp:expr(Event),
+                  PrettyArgs = erl_pp:exprs(Args),
+                  #edge{
+                     vertex1 = PrettyState,
+                     vertex2 = NextState,
+                     edge_data =
+                         #edge_data{
+                            event = PrettyEvent,
+                            args = PrettyArgs,
+                            pattern = Args,
+                            guard = PrettyGuards,
+                            code = PrettyBody,
+                            attributes = [RetType|Options]}
+                    }
+          end,
+    map_parse_func(Fun, State, Body, gen_statem);
 parse_function_clause({clause, _Line, [Event | Args], Guards, Body},
                       FnName, Options, gen_fsm) ->
-  Fun = fun({ok, NextState, _}) ->
-          PrettyGuards = lists:map(fun(G) -> erl_pp:guard(G) end, Guards),
-          PrettyBody = erl_pp:exprs(Body),
-          PrettyEvent = erl_pp:expr(Event),
-          PrettyArgs = erl_pp:exprs(Args),
-          #edge{
-            vertex1 = FnName,
-            vertex2 = NextState,
-            edge_data =
-            #edge_data{
-              event = PrettyEvent,
-              args = PrettyArgs,
-              pattern = Args,
-              guard = PrettyGuards,
-              code = PrettyBody,
-              attributes = Options}
-          }
-        end,
-  map_parse_func(Fun, FnName, Body, gen_fsm);
+    Fun = fun({ok, NextState, _}) ->
+                  PrettyGuards = lists:map(fun(G) -> erl_pp:guard(G) end, Guards),
+                  PrettyBody = erl_pp:exprs(Body),
+                  PrettyEvent = erl_pp:expr(Event),
+                  PrettyArgs = erl_pp:exprs(Args),
+                  #edge{
+                     vertex1 = FnName,
+                     vertex2 = NextState,
+                     edge_data =
+                         #edge_data{
+                            event = PrettyEvent,
+                            args = PrettyArgs,
+                            pattern = Args,
+                            guard = PrettyGuards,
+                            code = PrettyBody,
+                            attributes = Options}
+                    }
+          end,
+    map_parse_func(Fun, FnName, Body, gen_fsm);
 parse_function_clause({clause, _Line, [_Call, Event | Args], Guards, Body},
                       FnName, Options, gen_statem) ->
-  Fun = fun({ok, NextState, _}) ->
-          PrettyGuards = lists:map(fun(G) -> erl_pp:guard(G) end, Guards),
-          PrettyBody = erl_pp:exprs(Body),
-          PrettyEvent = erl_pp:expr(Event),
-          PrettyArgs = erl_pp:exprs(Args),
-          #edge{
-            vertex1 = FnName,
-            vertex2 = NextState,
-            edge_data =
-            #edge_data{
-              event = PrettyEvent,
-              args = PrettyArgs,
-              pattern = Args,
-              guard = PrettyGuards,
-              code = PrettyBody,
-              attributes = Options}
-          }
-        end,
-  map_parse_func(Fun, FnName, Body, gen_statem).
+    Fun = fun({ok, NextState, _}) ->
+                  PrettyGuards = lists:map(fun(G) -> erl_pp:guard(G) end, Guards),
+                  PrettyBody = erl_pp:exprs(Body),
+                  PrettyEvent = erl_pp:expr(Event),
+                  PrettyArgs = erl_pp:exprs(Args),
+                  #edge{
+                     vertex1 = FnName,
+                     vertex2 = NextState,
+                     edge_data =
+                         #edge_data{
+                            event = PrettyEvent,
+                            args = PrettyArgs,
+                            pattern = Args,
+                            guard = PrettyGuards,
+                            code = PrettyBody,
+                            attributes = Options}
+                    }
+          end,
+    map_parse_func(Fun, FnName, Body, gen_statem).
 
 parse_state({atom, _, A}) ->
     A;
@@ -388,16 +388,16 @@ map_parse_func(Fun, State, Body, Type) ->
     end.
 
 parse_body(Body) ->
-  lists:flatmap(fun parse_statement/1, Body).
+    lists:flatmap(fun parse_statement/1, Body).
 
 parse_statement({tuple, Line, Elems}) ->
-  [{tuple, Line, Elems}];
+    [{tuple, Line, Elems}];
 parse_statement(Statement) when is_tuple(Statement) ->
-  [parse_statement(S) || S <- tuple_to_list(Statement)];
+    [parse_statement(S) || S <- tuple_to_list(Statement)];
 parse_statement(Statement) when is_list(Statement) ->
-  [parse_statement(S) || S <- Statement];
+    [parse_statement(S) || S <- Statement];
 parse_statement(_Statement) ->
-  [].
+    [].
 
 eval_fsm_return() ->
     fun({ok, {ok, NextState, _Data}}) ->
@@ -423,35 +423,35 @@ eval_fsm_return() ->
     end.
 
 eval_statem_return(State) ->
-    fun ({ok, {ok, NextState, _Data}}) ->
+    fun({ok, {ok, NextState, _Data}}) ->
             {ok, NextState, init};
-        ({ok, {ok, NextState, _Data, _Actions}}) ->
+       ({ok, {ok, NextState, _Data, _Actions}}) ->
             {ok, NextState, init};
-        ({ok, ignore}) ->
+       ({ok, ignore}) ->
             {ok, terminate, init};
-        ({ok, stop}) ->
+       ({ok, stop}) ->
             {ok, terminate, async};
-        ({ok, {stop, _Reason}}) ->
+       ({ok, {stop, _Reason}}) ->
             {ok, terminate, async};
-        ({ok, {stop, _Reason, _NewData}}) ->
+       ({ok, {stop, _Reason, _NewData}}) ->
             {ok, terminate, async};
-        ({ok, {stop_and_reply, _Reason, _Replies}}) ->
+       ({ok, {stop_and_reply, _Reason, _Replies}}) ->
             {ok, terminate, async};
-        ({ok, {stop_and_reply, _Reason, _Replies, _NewData}}) ->
+       ({ok, {stop_and_reply, _Reason, _Replies, _NewData}}) ->
             {ok, terminate, async};
-        ({ok, {next_state, NextState, _Data}}) ->
+       ({ok, {next_state, NextState, _Data}}) ->
             {ok, NextState, async};
-        ({ok, {next_state, NextState, _Data, _Actions}}) ->
+       ({ok, {next_state, NextState, _Data, _Actions}}) ->
             {ok, NextState, async};
-        ({ok, {keep_state, _NewData}}) ->
+       ({ok, {keep_state, _NewData}}) ->
             {ok, State, async};
-        ({ok, {keep_state, _NewData, _Actions}}) ->
+       ({ok, {keep_state, _NewData, _Actions}}) ->
             {ok, State, async};
-        ({ok, keep_state_and_data}) ->
+       ({ok, keep_state_and_data}) ->
             {ok, State, async};
-        ({ok, {keep_state_and_data, _Actions}}) ->
+       ({ok, {keep_state_and_data, _Actions}}) ->
             {ok, State, async};
-        (_Other) ->
+       (_Other) ->
             undefined
     end.
 
@@ -460,7 +460,8 @@ eval_tuple({tuple, Line, Elements})->
                                       {atom, RLine, Atom};
                                  (_Other) ->
                                       {atom, 0, '@var'}
-                              end, Elements),
+                              end,
+                              Elements),
     ClearTuple = {tuple, Line, ClearElements},
     {value, Val, _} = erl_eval:expr(ClearTuple, []),
     {ok, Val};
@@ -468,56 +469,65 @@ eval_tuple(_Other)->
     {error, not_a_tuple}.
 
 expand_allstates(Edges, States) ->
-  ClearStates = lists:delete(init, lists:delete(terminate, States)),
-  lists:foldl(fun(Edge, Acc) ->
-    #edge{vertex1 = FnName, vertex2 = To, edge_data = Data} = Edge,
-    StateIndex = case FnName of
-                   handle_event ->  1;
-                   handle_sync_event -> 2;
-                   handle_info -> 1
-                 end,
-    case To of
-      '@var' ->
-        case lists:nth(StateIndex, Data#edge_data.pattern) of
-          {atom, _line, StateFrom} ->
-            Acc ++ lists:map(fun(State) ->
-              #edge{vertex1 = StateFrom, vertex2 = State, edge_data = Data}
-            end, ClearStates);
-          _ ->
-            Acc ++ lists:map(fun(State) ->
-              #edge{vertex1 = State, vertex2 = State, edge_data = Data}
-            end, ClearStates)
-        end;
-      Other ->
-        case lists:nth(StateIndex, Data#edge_data.pattern) of
-          {atom, _line, StateFrom} ->
-            Acc ++
-              [#edge{vertex1 = StateFrom, vertex2 = Other, edge_data = Data}];
-          _ ->
-            Acc ++ lists:map(fun(State) ->
-              #edge{vertex1 = State, vertex2 = Other, edge_data = Data}
-            end, ClearStates)
-        end
-    end
-  end, [], Edges).
+    ClearStates = lists:delete(init, lists:delete(terminate, States)),
+    lists:foldl(fun(Edge, Acc) ->
+                        #edge{vertex1 = FnName,
+                              vertex2 = To,
+                              edge_data = Data} = Edge,
+                        StateIndex = case FnName of
+                                         handle_event ->  1;
+                                         handle_sync_event -> 2;
+                                         handle_info -> 1
+                                     end,
+                        case To of
+                            '@var' ->
+                                case lists:nth(StateIndex, Data#edge_data.pattern) of
+                                    {atom, _line, StateFrom} ->
+                                        Acc ++ lists:map(fun(State) ->
+                                                                 #edge{vertex1 = StateFrom,
+                                                                       vertex2 = State,
+                                                                       edge_data = Data}
+                                                         end, ClearStates);
+                                    _ ->
+                                        Acc ++ lists:map(fun(State) ->
+                                                                 #edge{vertex1 = State,
+                                                                       vertex2 = State,
+                                                                       edge_data = Data}
+                                                         end, ClearStates)
+                                end;
+                            Other ->
+                                case lists:nth(StateIndex, Data#edge_data.pattern) of
+                                    {atom, _line, StateFrom} ->
+                                        Acc ++ [#edge{vertex1 = StateFrom,
+                                                      vertex2 = Other,
+                                                      edge_data = Data}];
+                                    _ ->
+                                        Acc ++ lists:map(fun(State) ->
+                                                                 #edge{vertex1 = State,
+                                                                       vertex2 = Other,
+                                                                       edge_data = Data}
+                                                         end, ClearStates)
+                                end
+                        end
+                end, [], Edges).
 
 get_vertex(Graph, Label) ->
-  Vertices = digraph:vertices(Graph),
-  find_label(Label, Vertices, Graph).
+    Vertices = digraph:vertices(Graph),
+    find_label(Label, Vertices, Graph).
 
 find_label(Label, [V|Rest], Graph) ->
-  case digraph:vertex(Graph, V) of
-    {V, Label} ->
-      V;
-    _ ->
-      find_label(Label, Rest, Graph)
-  end;
+    case digraph:vertex(Graph, V) of
+        {V, Label} ->
+            V;
+        _ ->
+            find_label(Label, Rest, Graph)
+    end;
 find_label(_, [], _) ->
-  {error, no_label}.
+    {error, no_label}.
 
 remove_dups([])    -> [];
 remove_dups([H|T]) -> [H | [X || X <- remove_dups(T), X /= H]].
 
 
 abstract_print(Form) ->
-  erl_prettypr:format(erl_syntax:form_list([Form])).
+    erl_prettypr:format(erl_syntax:form_list([Form])).
