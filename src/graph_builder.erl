@@ -379,24 +379,14 @@ map_parse_func(Fun, State, Body, Type) ->
   end.
 
 parse_body(Body) ->
-  parse_body(Body, []).
-
-parse_body([Statement|Rest], Acc) ->
-  parse_body(Rest, Acc ++ [parse_statement(Statement)]);
-parse_body([], Acc) ->
-%%   io:format("~p~n", [Acc]),
-  lists:flatten([Acc]).
+  lists:flatmap(fun parse_statement/1, Body).
 
 parse_statement({tuple, Line, Elems}) ->
-  {tuple, Line, Elems};
+  [{tuple, Line, Elems}];
 parse_statement(Statement) when is_tuple(Statement) ->
-    lists:map(fun(Index) ->
-                      parse_statement(element(Index, Statement))
-              end, lists:seq(1, size(Statement)));
+  [parse_statement(S) || S <- tuple_to_list(Statement)];
 parse_statement(Statement) when is_list(Statement) ->
-    lists:map(fun(Index) ->
-                      parse_statement(lists:nth(Index, Statement))
-              end, lists:seq(1, length(Statement)));
+  [parse_statement(S) || S <- Statement];
 parse_statement(_Statement) ->
   [].
 
