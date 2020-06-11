@@ -4,7 +4,7 @@
 
 
 %% API
--export([digraph_to_dot/2, filter_newline/1]).
+-export([digraph_to_dot/2, digraph_to_plantuml/2, filter_newline/1]).
 
 digraph_to_dot(Name, G) ->
     "digraph \"" ++ Name ++ "\" { \n" ++
@@ -36,6 +36,38 @@ edges_to_dot(G, [E|T]) ->
     "\n" ++
     edges_to_dot(G, T).
 
+
+digraph_to_plantuml(_Name, G) ->
+  "@startuml\n"  ++
+    edges_to_plantuml(G, digraph:edges(G)) ++
+    "@enduml".
+
+edges_to_plantuml(_G, []) ->
+  "\n";
+edges_to_plantuml(G, [E|T]) ->
+  {E, V1, V2, EdgeLabel} = digraph:edge(G, E),
+  {_, VLabel1} = digraph:vertex(G, V1),
+  {_, VLabel2} = digraph:vertex(G, V2),
+  FilteredEvent = filter_newline(lists:flatten(EdgeLabel#edge_data.event)),
+  case EdgeLabel#edge_data.guard of
+    [] ->
+      R= io_lib:format("~s",[FilteredEvent]);
+    Guard ->
+      R= io_lib:format("~s [~s]",[FilteredEvent, Guard])
+  end,
+
+  %EdgePretty=lists:flatten(R),
+  case R of
+    [[]] ->
+      statename(VLabel1) ++ "-->" ++ statename(VLabel2) ++
+        "\n" ++
+        edges_to_plantuml(G, T);
+    _ ->
+      statename(VLabel1) ++ "-->" ++ statename(VLabel2) ++
+        " : " ++ R ++
+        "\n" ++
+        edges_to_plantuml(G, T)
+  end.
 
 statename(init) ->
   "[*]";

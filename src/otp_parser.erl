@@ -37,14 +37,14 @@ create_graph(FileName, IncludePaths, OutputDir, Mode)->
 init([]) ->
   {ok, #state{}}.
 
-handle_call({create, FileName, IncludePaths, OutputDir, dot}, _From, State) ->
-    OutputFilename = output_filename(FileName, OutputDir, dot),
+handle_call({create, FileName, IncludePaths, OutputDir, Mode}, _From, State) ->
+    OutputFilename = output_filename(FileName, OutputDir, Mode),
     ok = filelib:ensure_dir(OutputFilename),
     {ok, File} = file:open(OutputFilename, [write]),
     {parsed, _, Digraph} = graph_builder:parse_file(FileName, IncludePaths),
-    file:write(File, dot:digraph_to_dot(filename:rootname(FileName), Digraph)), 
+    OutputFunction = output_function(Mode),
+    file:write(File, OutputFunction(filename:rootname(FileName), Digraph)),
     file:close(File),
-
     {reply, ok, State}.
 
 handle_cast(_Request, State) ->
@@ -67,4 +67,10 @@ output_filename(FileName, undefined, Mode) ->
 output_filename(FileName, OutputDir, Mode) ->
     filename:join([OutputDir, filename:basename(filename:rootname(FileName)) ++ output_extension(Mode)]).
 
-output_extension(dot) -> ".gv".
+output_extension(dot) -> ".gv";
+output_extension(plantuml) -> ".txt".
+
+output_function(dot) ->
+    fun dot:digraph_to_dot/2;
+output_function(plantuml) ->
+    fun dot:digraph_to_plantuml/2.
