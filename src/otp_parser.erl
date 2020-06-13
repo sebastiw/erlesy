@@ -9,11 +9,11 @@
 
 %% gen_server callbacks
 -export([init/1,
-  handle_call/3,
-  handle_cast/2,
-  handle_info/2,
-  terminate/2,
-  code_change/3]).
+         handle_call/3,
+         handle_cast/2,
+         handle_info/2,
+         terminate/2,
+         code_change/3]).
 
 -define(SERVER, ?MODULE).
 
@@ -38,39 +38,30 @@ init([]) ->
   {ok, #state{}}.
 
 handle_call({create, FileName, IncludePaths, OutputDir, Mode}, _From, State) ->
-    OutputFilename = output_filename(FileName, OutputDir, Mode),
+    OutputFilename = erlesy_formatter:output_filename(Mode, FileName, OutputDir),
     ok = filelib:ensure_dir(OutputFilename),
     {ok, File} = file:open(OutputFilename, [write]),
-    {parsed, _, Digraph} = graph_builder:parse_file(FileName, IncludePaths),
-    OutputFunction = output_function(Mode),
-    file:write(File, OutputFunction(filename:rootname(FileName), Digraph)),
-    file:close(File),
-    {reply, ok, State}.
+    case graph_builder:parse_file(FileName, IncludePaths) of
+        {parsed, _, Digraph} ->
+            file:write(File, erlesy_formatter:format(Mode, filename:rootname(FileName), Digraph)),
+            file:close(File),
+            {reply, ok, State};
+        {error, _} = Err ->
+            {reply, Err, State}
+    end.
 
 handle_cast(_Request, State) ->
     {noreply, State}.
 
 handle_info(_Info, State) ->
-  {noreply, State}.
+    {noreply, State}.
 
 terminate(_Reason, _State) ->
-  ok.
+    ok.
 
 code_change(_OldVsn, State, _Extra) ->
-  {ok, State}.
+    {ok, State}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-output_filename(FileName, undefined, Mode) ->
-    filename:rootname(FileName) ++ output_extension(Mode);
-output_filename(FileName, OutputDir, Mode) ->
-    filename:join([OutputDir, filename:basename(filename:rootname(FileName)) ++ output_extension(Mode)]).
-
-output_extension(dot) -> ".gv";
-output_extension(plantuml) -> ".txt".
-
-output_function(dot) ->
-    fun dot:digraph_to_dot/2;
-output_function(plantuml) ->
-    fun dot:digraph_to_plantuml/2.
